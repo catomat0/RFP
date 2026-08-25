@@ -70,4 +70,3 @@ excelkiller/
 - **Desktop**: PyWebView
 - **Build**: PyInstaller
 
-AQ.Ab8RN6LEgCqlKKWFhmaN-KZ2jGKSWITcSdjDY02dq0wvE9-CIQ
