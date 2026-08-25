@@ -7,7 +7,6 @@ echo   제안요청서분석기 Windows 빌드
 echo =============================================
 echo.
 
-:: Python 확인
 where python > nul 2>&1
 if errorlevel 1 (
     echo [오류] Python이 설치되지 않았습니다.
@@ -26,7 +25,7 @@ if errorlevel 1 (
 
 echo.
 echo [2/2] 빌드 중 (수 분 소요)...
-python -m PyInstaller --noconfirm --windowed --name "제안요청서분석기" --add-data "부록설계_양식.xlsx;." --add-data "index.html;." --hidden-import "uvicorn.logging" --hidden-import "uvicorn.loops" --hidden-import "uvicorn.loops.auto" --hidden-import "uvicorn.protocols" --hidden-import "uvicorn.protocols.http" --hidden-import "uvicorn.protocols.http.auto" --hidden-import "uvicorn.protocols.websockets" --hidden-import "uvicorn.protocols.websockets.auto" --hidden-import "uvicorn.lifespan" --hidden-import "uvicorn.lifespan.on" --hidden-import "webview.platforms.edgechromium" main.py
+python -m PyInstaller --noconfirm build_win.spec
 if errorlevel 1 (
     echo.
     echo [오류] 빌드 실패. 위 오류 메시지를 확인하세요.

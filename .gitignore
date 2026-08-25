@@ -1,6 +1,8 @@
 __pycache__/
 *.py[cod]
 *.spec
+!build_win.spec
+!build_mac.spec
 build/
 dist/
 server.log
