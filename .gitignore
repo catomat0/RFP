@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+*.spec
+build/
+dist/
+server.log
+.server.pid
+*.xlsx
+!부록설계_양식.xlsx

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>제안요청서 분석기 (Gemini Free)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg:#f5f5f7;--surface:#ffffff;--ink:#1d1d1f;--secondary:#6e6e73;
+    --fill:rgba(118,118,128,.12);--fill-hover:rgba(118,118,128,.18);
+    --blue:#0071e3;--blue-hover:#0077ed;--blue-soft:rgba(0,113,227,.1);
+    --red:#ff3b30;--divider:rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:15px;line-height:1.5;}
+  .wrap{max-width:720px;margin:0 auto;padding:64px 24px 96px;}
+  .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);font-weight:600;margin-bottom:8px;}
+  h1{font-size:32px;font-weight:700;margin:0 0 8px;letter-spacing:-.02em;color:var(--ink);}
+  .sub{color:var(--secondary);font-size:15px;margin:0 0 32px;max-width:480px;line-height:1.55;}
+  .apikey-section{margin-bottom:16px;}
+  .apikey-wrap label{display:block;font-size:12px;font-weight:500;color:var(--secondary);margin-bottom:6px;}
+  .apikey-wrap input{width:100%;padding:11px 14px;border:none;border-radius:10px;background:var(--fill);font-size:13px;color:var(--ink);font-family:ui-monospace,monospace;transition:background .15s,box-shadow .15s;}
+  .apikey-wrap input:focus{outline:none;background:var(--surface);box-shadow:0 0 0 3px rgba(0,113,227,.35);}
+  .drop{border:1.5px dashed rgba(0,0,0,.15);border-radius:18px;padding:48px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--surface);}
+  .drop:hover,.drop.over{border-color:var(--blue);background:var(--blue-soft);}
+  .drop p.name{font-size:14px;font-weight:500;color:var(--ink);margin:0 0 4px;}
+  .drop p.hint{font-size:12px;color:var(--secondary);margin:0;}
+  input[type=file]{display:none;}
+  button.primary{width:100%;margin-top:12px;padding:14px;border:none;border-radius:980px;background:var(--blue);color:#fff;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .15s,transform .1s;}
+  button.primary:hover:not(:disabled){background:var(--blue-hover);}
+  button.primary:active:not(:disabled){transform:scale(.98);}
+  button.primary:disabled{opacity:.4;cursor:not-allowed;}
+  .status{font-size:13px;color:var(--secondary);margin-top:12px;text-align:center;}
+  .error{font-size:13px;color:var(--red);margin-top:12px;}
+  .results{margin-top:48px;display:grid;gap:14px;}
+  .results-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .results-head h2{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--secondary);margin:0;font-weight:600;}
+  button.ghost{font-size:13px;font-weight:500;padding:8px 16px;border:none;border-radius:980px;background:var(--fill);cursor:pointer;color:var(--ink);font-family:inherit;transition:background .15s;}
+  button.ghost:hover{background:var(--fill-hover);}
+  button.ghost:disabled{opacity:.4;cursor:not-allowed;}
+  section.card{background:var(--surface);border-radius:18px;padding:24px 26px;box-shadow:0 2px 16px rgba(0,0,0,.06),0 0 0 .5px rgba(0,0,0,.04);}
+  section.card h3{font-size:13px;font-weight:600;color:var(--blue);margin:0 0 16px;text-transform:uppercase;letter-spacing:.06em;}
+  .kv{display:grid;grid-template-columns:88px 1fr;gap:10px 0;font-size:14px;}
+  .kv dt{color:var(--secondary);}
+  .kv dd{margin:0;color:var(--ink);}
+  ul.plain{margin:0;padding-left:18px;font-size:14px;color:var(--ink);}
+  ul.plain li{margin-bottom:5px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  table th{text-align:left;font-weight:500;color:var(--secondary);border-bottom:1px solid var(--divider);padding:7px 10px 7px 0;white-space:nowrap;}
+  table td{border-bottom:1px solid var(--divider);padding:10px 10px 10px 0;vertical-align:top;color:var(--ink);}
+  .toc-wrap{display:grid;gap:20px;}
+  .toc-group-label{font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.07em;border-bottom:2px solid var(--blue);padding-bottom:6px;margin-bottom:10px;}
+  .toc-item-card{background:var(--fill);border-radius:12px;padding:14px 16px;margin-bottom:8px;}
+  .toc-item-sub{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;}
+  .toc-fields{display:grid;gap:7px;}
+  .toc-field{display:grid;grid-template-columns:72px 1fr;gap:8px;font-size:12.5px;line-height:1.55;}
+  .toc-fl{color:var(--secondary);font-weight:600;padding-top:1px;white-space:nowrap;}
+  .toc-fv{color:var(--ink);}
+  .fl-cond .toc-fl{color:#c0392b;}
+  .fl-head .toc-fl{color:var(--blue);}
+  .fl-head .toc-fv{font-weight:500;}
+  .guide{background:var(--blue-soft);border-radius:14px;padding:16px 18px;margin-bottom:14px;}
+  .guide-title{font-size:12px;font-weight:600;color:var(--blue);margin:0 0 10px;text-transform:uppercase;letter-spacing:.06em;}
+  .guide ol{margin:0;padding-left:18px;font-size:13px;color:var(--ink);line-height:1.65;}
+  .guide ol li{margin-bottom:3px;}
+  .guide a{color:var(--blue);text-decoration:none;font-weight:500;}
+  .guide a:hover{text-decoration:underline;}
+  .guide .note{margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,113,227,.15);font-size:12px;color:var(--secondary);}
+  .warn-banner{display:flex;align-items:flex-start;gap:10px;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;font-weight:500;line-height:1.55;}
+  .warn-banner.green{background:#e6f4ea;border:1.5px solid #34a853;color:#1a5c2a;}
+  .warn-banner.yellow{background:#fff3cd;border:1.5px solid #f0a500;color:#7a4f00;}
+  .warn-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+  .template-row{display:flex;align-items:center;gap:12px;background:var(--fill);border-radius:12px;padding:12px 16px;margin-bottom:16px;}
+  .template-label{font-size:12px;font-weight:600;color:var(--secondary);margin-right:4px;white-space:nowrap;}
+  .template-name{font-size:13px;color:var(--ink);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .template-name.none{color:var(--secondary);font-style:italic;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">내부 도구 · Gemini Free</div>
+  <h1>제안요청서 분석기</h1>
+  <p class="sub">RFP를 업로드하면 사업개요·발주처정보·과거유사사례를 정리하고, 부록설계 양식을 채워 엑셀로 반환합니다.</p>
+
+  <div class="apikey-section">
+    <div class="guide">
+      <p class="guide-title">Gemini API Key 발급 방법</p>
+      <div class="warn-banner green">
+        <span class="warn-icon">✅</span>
+        <span><strong>무료 계정으로 사용 가능합니다.</strong><br>Google AI Studio에서 API 키를 발급받아 바로 사용하세요. 별도 결제 등록 불필요.</span>
+      </div>
+      <div class="warn-banner yellow">
+        <span class="warn-icon">⚠️</span>
+        <span>단, <strong>Google Search 웹 검색 기능은 포함되지 않습니다.</strong><br>업로드한 문서 내용 기반으로 분석하며, 발주처 최신 정보·유사 사례 검색은 모델 학습 지식으로 대체됩니다.</span>
+      </div>
+      <ol>
+        <li><a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a> 접속</li>
+        <li>구글 계정으로 로그인</li>
+        <li>상단 <strong>Get API key</strong> 클릭</li>
+        <li><strong>Create API key</strong> 버튼 클릭</li>
+        <li>프로젝트 선택 후 키 생성 → 복사해서 아래에 붙여넣기</li>
+      </ol>
+      <p class="note">무료 티어 일일 쿼터 초과 시 익일 자정(미국 태평양 시간) 리셋</p>
+    </div>
+    <div class="apikey-wrap">
+      <label>Gemini API Key</label>
+      <input type="password" id="geminiKey" placeholder="AIza..." autocomplete="off" />
+    </div>
+  </div>
+
+  <div id="drop" class="drop">
+    <p class="name" id="dropName">파일을 드래그하거나 클릭해서 업로드</p>
+    <p class="hint">PDF · DOCX · HWPX 지원 (구버전 HWP는 HWPX/PDF로 변환 후 업로드)</p>
+    <input type="file" id="fileInput" accept=".pdf,.docx,.hwpx" />
+  </div>
+
+  <button class="primary" id="analyzeBtn" disabled>분석하기</button>
+  <div id="statusEl" class="status" style="display:none;"></div>
+  <div id="errorEl" class="error" style="display:none;"></div>
+
+  <div id="resultsEl" class="results" style="display:none;">
+    <div class="results-head">
+      <h2>분석 결과</h2>
+      <button class="ghost" id="exportBtn">부록설계 양식 다운로드</button>
+    </div>
+    <div id="resultsBody"></div>
+  </div>
+</div>
+
+<script>
+// file://로 직접 열렸을 때: 서버 실행 여부 감지 후 처리
+if (window.location.protocol === 'file:') {
+  const banner = document.createElement('div');
+  banner.id = 'startup-banner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1d1d1f;color:#fff;padding:14px 24px;text-align:center;font-size:13px;font-weight:500;z-index:9999;line-height:1.6;';
+  banner.innerHTML = '서버 연결 확인 중...';
+  document.body.prepend(banner);
+
+  fetch('http://localhost:8000/', { mode: 'no-cors', signal: AbortSignal.timeout(1500) })
+    .then(() => { window.location.href = 'http://localhost:8000'; })
+    .catch(() => {
+      banner.innerHTML =
+        '서버가 실행되지 않았습니다. &nbsp;|&nbsp; ' +
+        '<strong>Mac:</strong> 시작.command &nbsp; <strong>Windows:</strong> 시작.bat &nbsp; 파일을 더블클릭하세요.';
+    });
+}
+
+const dropEl = document.getElementById('drop');
+const fileInput = document.getElementById('fileInput');
+const dropName = document.getElementById('dropName');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const statusEl = document.getElementById('statusEl');
+const errorEl = document.getElementById('errorEl');
+const resultsEl = document.getElementById('resultsEl');
+const resultsBody = document.getElementById('resultsBody');
+const exportBtn = document.getElementById('exportBtn');
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let selectedFile = null;
+let currentAnalysis = null;
+
+// ---------- 파일 업로드 ----------
+
+dropEl.addEventListener('click', () => fileInput.click());
+dropEl.addEventListener('dragover', (e) => { e.preventDefault(); dropEl.classList.add('over'); });
+dropEl.addEventListener('dragleave', () => dropEl.classList.remove('over'));
+dropEl.addEventListener('drop', (e) => {
+  e.preventDefault(); dropEl.classList.remove('over');
+  if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', (e) => { if (e.target.files.length) setFile(e.target.files[0]); });
+
+function setFile(file) {
+  selectedFile = file;
+  dropName.textContent = file.name;
+  analyzeBtn.disabled = false;
+  errorEl.style.display = 'none';
+}
+function showError(msg) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
+function showStatus(msg) { statusEl.textContent = msg; statusEl.style.display = msg ? 'block' : 'none'; }
+
+analyzeBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  errorEl.style.display = 'none';
+  resultsEl.style.display = 'none';
+  analyzeBtn.disabled = true;
+  try {
+    showStatus('파일에서 텍스트를 추출하는 중...');
+    const text = await extractText(selectedFile);
+    if (!text || text.trim().length < 30) throw new Error('파일에서 텍스트를 충분히 추출하지 못했습니다. 스캔본 PDF인지 확인해주세요.');
+    showStatus('Gemini로 분석 중입니다 (1~2분 소요)...');
+    const analysis = await analyzeWithGemini(text);
+    currentAnalysis = analysis;
+    renderResults(analysis);
+    showStatus('');
+    resultsEl.style.display = 'grid';
+  } catch (err) {
+    console.error(err);
+    showStatus('');
+    showError(err.message || '분석 중 오류가 발생했습니다.');
+  } finally {
+    analyzeBtn.disabled = false;
+  }
+});
+
+// ---------- 텍스트 추출 ----------
+
+async function extractText(file) {
+  const ext = file.name.toLowerCase().split('.').pop();
+  if (ext === 'pdf') return extractPdf(file);
+  if (ext === 'docx') return extractDocx(file);
+  if (ext === 'hwpx') return extractHwpx(file);
+  if (ext === 'hwp') throw new Error('HWP(구 버전) 파일은 지원하지 않습니다. HWPX 또는 PDF로 변환 후 업로드해주세요.');
+  throw new Error('지원하지 않는 파일 형식입니다: .' + ext);
+}
+
+async function extractPdf(file) {
+  const buf = await file.arrayBuffer();
+  const doc = await pdfjsLib.getDocument({ data: buf }).promise;
+  let text = '';
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map((it) => it.str).join(' ') + '\n';
+  }
+  return text;
+}
+
+async function extractDocx(file) {
+  const buf = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({ arrayBuffer: buf });
+  return result.value;
+}
+
+async function extractHwpx(file) {
+  const buf = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(buf);
+  const sectionFiles = Object.keys(zip.files).filter((n) => /^Contents\/section\d+\.xml$/.test(n)).sort();
+  if (!sectionFiles.length) throw new Error('HWPX 파일에서 본문을 찾을 수 없습니다.');
+  let fullText = '';
+  for (const path of sectionFiles) {
+    const xml = await zip.files[path].async('string');
+    for (const m of xml.matchAll(/<hp:t[^>]*>(.*?)<\/hp:t>/gs)) {
+      const cleaned = m[1].replace(/<[^>]+>/g, '').trim();
+      if (cleaned) fullText += cleaned + '\n';
+    }
+  }
+  return fullText;
+}
+
+
+// ---------- Gemini 분석 (백엔드 위임) ----------
+
+async function analyzeWithGemini(text) {
+  const apiKey = document.getElementById('geminiKey').value.trim();
+  if (!apiKey) throw new Error('Gemini API Key를 입력해주세요.');
+
+  const response = await fetch('/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, api_key: apiKey }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || `서버 오류: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// ---------- 결과 렌더링 ----------
+
+function esc(s) { return (s ?? '').toString().replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+
+function renderToc(toc) {
+  const groups = [];
+  toc.forEach(item => {
+    const last = groups[groups.length - 1];
+    if (!last || last.name !== item.대분류) groups.push({ name: item.대분류, items: [item] });
+    else last.items.push(item);
+  });
+  return groups.map(g => `
+    <div>
+      <div class="toc-group-label">${esc(g.name)}</div>
+      ${g.items.map(item => `
+        <div class="toc-item-card">
+          <div class="toc-item-sub">${esc(item.소분류)}</div>
+          <div class="toc-fields">
+            <div class="toc-field"><span class="toc-fl">주요 기획</span><span class="toc-fv">${esc(item.주요기획)}</span></div>
+            <div class="toc-field"><span class="toc-fl">포함 내용</span><span class="toc-fv">${esc(item.포함내용)}</span></div>
+            <div class="toc-field fl-cond"><span class="toc-fl">필수 조건</span><span class="toc-fv">${esc(item.필수조건)}</span></div>
+            <div class="toc-field fl-head"><span class="toc-fl">헤드 메세지</span><span class="toc-fv">${esc(item.헤드메세지)}</span></div>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function renderResults(a) {
+  const o = a.사업개요 || {}, c = a.발주처정보 || {}, cases = a.과거유사사례 || [];
+  const d = a.제안작성방향 || {}, toc = a.목차설계 || [];
+  resultsBody.innerHTML = `
+    <section class="card">
+      <h3>사업 개요</h3>
+      <dl class="kv">
+        <dt>사업명</dt><dd>${esc(o.사업명)}</dd>
+        <dt>발주처</dt><dd>${esc(o.발주처)}</dd>
+        <dt>사업기간</dt><dd>${esc(o.사업기간)}</dd>
+        <dt>예산</dt><dd>${esc(o.예산)}</dd>
+        <dt>사업목적</dt><dd>${esc(o.사업목적)}</dd>
+      </dl>
+    </section>
+    <section class="card">
+      <h3>발주처 정보</h3>
+      <p style="font-size:13.5px;margin:0 0 10px;">${esc(c.기관특성)}</p>
+      <ul class="plain">${(c.최근사업이력 || []).map((h) => `<li>${esc(h)}</li>`).join('')}</ul>
+    </section>
+    <section class="card">
+      <h3>과거 유사 사례</h3>
+      <table>
+        <thead><tr><th>사례명</th><th>주관사</th><th>특이사항</th></tr></thead>
+        <tbody>${cases.map((r) => `<tr><td>${esc(r.사례명)}</td><td>${esc(r.주관사)}</td><td>${esc(r.특이사항)}</td></tr>`).join('')}</tbody>
+      </table>
+    </section>
+    <section class="card">
+      <h3>제안 작성 방향</h3>
+      <p style="font-size:13.5px;font-weight:500;margin:0 0 8px;">${esc(d.핵심전략)}</p>
+      <ul class="plain">${(d.차별화포인트 || []).map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
+    </section>
+    <section class="card">
+      <h3>부록 목차 설계 (${toc.length}개 항목)</h3>
+      <div class="toc-wrap">${renderToc(toc)}</div>
+    </section>`;
+}
+
+// ---------- 부록설계 양식 엑셀 다운로드 ----------
+
+exportBtn.addEventListener('click', async () => {
+  if (!currentAnalysis) return;
+  exportBtn.disabled = true;
+  exportBtn.textContent = '생성 중...';
+  try {
+    await exportWithTemplate(currentAnalysis);
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    exportBtn.disabled = false;
+    exportBtn.textContent = '부록설계 양식 다운로드';
+  }
+});
+
+async function exportWithTemplate(analysis) {
+  const response = await fetch('/export', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ analysis }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || `다운로드 오류: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const o = analysis.사업개요 || {};
+  const filename = `${o.사업명 || 'RFP'}_부록설계.xlsx`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
