@@ -34,7 +34,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='제안요청서분석기',
+    name='RFP-Analyzer',
     debug=False,
     strip=False,
     upx=True,
@@ -49,5 +49,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='제안요청서분석기',
+    name='RFP-Analyzer',
 )
