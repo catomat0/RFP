@@ -1,12 +1,10 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Any
-from urllib.parse import quote
 import httpx
 import json
-from io import BytesIO
 from openpyxl import load_workbook
 import os
 import sys
@@ -151,7 +149,6 @@ async def export_excel(req: ExportRequest):
     ws["B3"].value = o.get("예산", "")
     ws["B4"].value = o.get("사업기간", "")
 
-    # JS의 0-based 행 인덱스를 openpyxl 1-based로 변환 (+1)
     SECTIONS = [
         {"name": "제안 개요",    "start": 7,  "end": 10},
         {"name": "제안사 소개",  "start": 11, "end": 13},
@@ -174,16 +171,13 @@ async def export_excel(req: ExportRequest):
             ws.cell(row=row, column=5).value = item.get("필수조건", "")
             ws.cell(row=row, column=6).value = item.get("헤드메세지", "")
 
-    buf = BytesIO()
-    wb.save(buf)
-    buf.seek(0)
-
     filename = f"{o.get('사업명', 'RFP')}_부록설계.xlsx"
-    return StreamingResponse(
-        buf,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
-    )
+    downloads_dir = os.path.join(os.path.expanduser("~"), "Downloads")
+    os.makedirs(downloads_dir, exist_ok=True)
+    save_path = os.path.join(downloads_dir, filename)
+    wb.save(save_path)
+
+    return {"saved": save_path, "filename": filename}
 
 
 @app.get("/")

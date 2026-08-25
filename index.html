@@ -124,7 +124,7 @@
   <div id="resultsEl" class="results" style="display:none;">
     <div class="results-head">
       <h2>분석 결과</h2>
-      <button class="ghost" id="exportBtn">부록설계 양식 다운로드</button>
+      <button class="ghost" id="exportBtn">요약정리본 다운로드</button>
     </div>
     <div id="resultsBody"></div>
   </div>
@@ -349,7 +349,7 @@ exportBtn.addEventListener('click', async () => {
     showError(e.message);
   } finally {
     exportBtn.disabled = false;
-    exportBtn.textContent = '부록설계 양식 다운로드';
+    exportBtn.textContent = '요약정리본 다운로드';
   }
 });
 
@@ -362,18 +362,22 @@ async function exportWithTemplate(analysis) {
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err.detail || `다운로드 오류: ${response.status}`);
+    throw new Error(err.detail || `저장 오류: ${response.status}`);
   }
 
-  const blob = await response.blob();
-  const o = analysis.사업개요 || {};
-  const filename = `${o.사업명 || 'RFP'}_부록설계.xlsx`;
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+  const data = await response.json();
+  showSaved(data.saved);
+}
+
+function showSaved(path) {
+  let el = document.getElementById('savedNotice');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'savedNotice';
+    el.style.cssText = 'margin-top:10px;padding:10px 14px;background:#e6f4ea;border:1.5px solid #34a853;border-radius:8px;font-size:13px;color:#1a5c2a;word-break:break-all;';
+    exportBtn.parentNode.insertBefore(el, exportBtn.nextSibling);
+  }
+  el.innerHTML = `✅ 저장 완료: <b>${path}</b>`;
 }
 </script>
 </body>
