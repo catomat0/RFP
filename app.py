@@ -136,6 +136,9 @@ async def analyze(req: AnalyzeRequest):
 
 @app.post("/export")
 async def export_excel(req: ExportRequest):
+    if not os.path.exists(TEMPLATE_PATH):
+        raise HTTPException(500, f"템플릿 파일을 찾을 수 없습니다: {TEMPLATE_PATH}")
+
     analysis = req.analysis
     o = analysis.get("사업개요", {})
     toc = analysis.get("목차설계", [])
