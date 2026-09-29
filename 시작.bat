@@ -20,14 +20,11 @@ if errorlevel 1 (
     )
 )
 
-for /f "delims=" %%i in ('where python') do set PYTHON=%%i & goto :found
-:found
-
-"%PYTHON%" -c "import fastapi, uvicorn, httpx, openpyxl, webview" > nul 2>&1
+python -c "import fastapi, uvicorn, httpx, openpyxl, webview" > nul 2>&1
 if errorlevel 1 (
     echo [INFO] Installing packages...
-    "%PYTHON%" -m pip install --upgrade pip -q
-    "%PYTHON%" -m pip install -r requirements.txt -q
+    python -m pip install --upgrade pip --quiet
+    python -m pip install -r requirements.txt --quiet
     if errorlevel 1 (
         echo [ERROR] Package installation failed.
         echo Run as administrator or check internet connection.
@@ -37,7 +34,7 @@ if errorlevel 1 (
     echo [INFO] Done.
 )
 
-"%PYTHON%" main.py
+python main.py
 if errorlevel 1 (
     echo [ERROR] App failed to start.
     pause
