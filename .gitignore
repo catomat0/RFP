@@ -9,3 +9,4 @@ server.log
 .server.pid
 *.xlsx
 !부록설계_양식.xlsx
+.deps_installed
