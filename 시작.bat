@@ -21,6 +21,7 @@ if errorlevel 1 (
         exit /b 1
     )
     echo [INFO] Python installed successfully.
+    if exist ".deps_installed" del ".deps_installed"
 )
 
 if not exist ".deps_installed" (
