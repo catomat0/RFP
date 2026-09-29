@@ -10,3 +10,4 @@ server.log
 *.xlsx
 !부록설계_양식.xlsx
 .deps_installed
+.DS_Store
