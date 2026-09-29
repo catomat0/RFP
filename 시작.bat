@@ -1,11 +1,9 @@
 @echo off
-chcp 65001 > nul
 cd /d "%~dp0"
 
-:: 1. Python 확인 및 자동 설치
 where python > nul 2>&1
 if errorlevel 1 (
-    echo [INFO] Python not found. Installing via winget...
+    echo [INFO] Installing Python via winget...
     winget install --id Python.Python.3.11 --source winget --silent --accept-package-agreements --accept-source-agreements
     if errorlevel 1 (
         echo [ERROR] Python installation failed.
@@ -16,36 +14,31 @@ if errorlevel 1 (
     set "PATH=%LOCALAPPDATA%\Programs\Python\Python311;%LOCALAPPDATA%\Programs\Python\Python311\Scripts;%PATH%"
     where python > nul 2>&1
     if errorlevel 1 (
-        echo [ERROR] Python installed but PATH not updated.
-        echo Please close this window and run the script again.
+        echo [ERROR] Please close this window and run again.
         pause
         exit /b 1
     )
-    echo [INFO] Python installed successfully.
 )
 
-:: 2. 사용할 Python 경로 확정
-for /f "delims=" %%i in ('where python') do set PYTHON=%%i & goto :found_python
-:found_python
+for /f "delims=" %%i in ('where python') do set PYTHON=%%i & goto :found
+:found
 
-:: 3. 필요한 모듈 import 검사 후 없으면 설치
 "%PYTHON%" -c "import fastapi, uvicorn, httpx, openpyxl, webview" > nul 2>&1
 if errorlevel 1 (
-    echo [INFO] Installing required packages...
+    echo [INFO] Installing packages...
+    "%PYTHON%" -m pip install --upgrade pip -q
     "%PYTHON%" -m pip install -r requirements.txt -q
     if errorlevel 1 (
         echo [ERROR] Package installation failed.
-        echo Please check your internet connection or run as administrator.
+        echo Run as administrator or check internet connection.
         pause
         exit /b 1
     )
-    echo [INFO] Installation complete.
+    echo [INFO] Done.
 )
 
-:: 4. 앱 실행
 "%PYTHON%" main.py
 if errorlevel 1 (
-    echo.
-    echo [ERROR] Application failed to start.
+    echo [ERROR] App failed to start.
     pause
 )
