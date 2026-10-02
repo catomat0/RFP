@@ -20,6 +20,12 @@ if not exist "%PYTHON%" (
     exit /b 1
 )
 
+"%PYTHON%" -m pip --version > nul 2>&1
+if errorlevel 1 (
+    echo [INFO] Restoring pip...
+    "%PYTHON%" -m ensurepip --upgrade
+)
+
 "%PYTHON%" -c "import fastapi, uvicorn, httpx, openpyxl, webview" > nul 2>&1
 if errorlevel 1 (
     echo [INFO] Installing packages...
